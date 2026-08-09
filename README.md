@@ -1,4 +1,4 @@
-```markdown
+
 <p align="center">
   <a href="https://github.com/hadiswebpro">
     <img src="https://capsule-render.vercel.app/api?type=transparent&fontColor=8957e5&fontSize=54&height=90&width=602&text=Hello!%20I'm%20Hadis" alt="Hello! I'm Hadis" />
@@ -66,4 +66,4 @@ I enjoy learning by building real projects and improving my skills through pract
 <p align="center">
   <i> 🍀 From <a href="https://github.com/hadiswebpro">hadiswebpro</a></i>
 </p>
-```
+
