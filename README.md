@@ -52,7 +52,7 @@ I enjoy learning by building real projects and improving my skills through pract
 ### 📈 Contribution Graph
 
 <p align="center">
-  <img width="100%" src="https://github-readme-activity-graph.vercel.app/graph?username=hadiswebpro&theme=tokyo-night&hide_border=true&area=true" alt="GitHub contribution graph" />
+  <img width="100%" src="https://raw.githubusercontent.com/hadiswebpro/hadiswebpro/output/assets/contribution-graph.svg" alt="GitHub contribution graph" />
 </p>
 
 ### 💭 Dev Quote
