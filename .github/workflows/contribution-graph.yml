@@ -13,18 +13,116 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Generate activity graph
-        uses: maurodesouza/github-readme-activity-graph-action@v1
+      - name: Checkout output branch
+        uses: actions/checkout@v4
         with:
-          username: ${{ github.repository_owner }}
-          options: theme=tokyo-night&hide_border=true&area=true
-          output_path: dist/activity-graph.svg
+          ref: output
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
 
-      - name: Publish graph
-        uses: crazy-max/ghaction-github-pages@v3.1.0
-        with:
-          build_dir: dist
-          target_branch: output
+      - name: Generate contribution graph
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, urllib.request
+
+          query = """
+          query {
+            viewer {
+              login
+              contributionsCollection {
+                contributionCalendar {
+                  totalContributions
+                  weeks {
+                    contributionDays {
+                      contributionCount
+                      date
+                    }
+                  }
+                }
+              }
+            }
+          }
+          """
+
+          req = urllib.request.Request(
+              "https://api.github.com/graphql",
+              data=json.dumps({"query": query}).encode(),
+              headers={
+                  "Authorization": f"bearer {os.environ['GH_TOKEN']}",
+                  "Content-Type": "application/json",
+                  "User-Agent": "github-contribution-graph"
+              }
+          )
+
+          with urllib.request.urlopen(req) as response:
+              payload = json.load(response)
+
+          if "errors" in payload:
+              raise RuntimeError(payload["errors"])
+
+          calendar = payload["data"]["viewer"]["contributionsCollection"]["contributionCalendar"]
+          days = [
+              day
+              for week in calendar["weeks"]
+              for day in week["contributionDays"]
+          ]
+
+          levels = []
+          max_count = max((day["contributionCount"] for day in days), default=0)
+
+          for day in days:
+              count = day["contributionCount"]
+              if count == 0:
+                  level = 0
+              elif max_count <= 4:
+                  level = min(count, 4)
+              else:
+                  level = min(4, 1 + (count * 3 // max_count))
+              levels.append((day["date"], count, level))
+
+          width = 820
+          height = 180
+          left = 28
+          top = 34
+          cell = 12
+          gap = 3
+          weeks = (len(days) + 6) // 7
+          colors = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]
+
+          rects = []
+          for index, (date, count, level) in enumerate(levels):
+              week = index // 7
+              day = index % 7
+              x = left + week * (cell + gap)
+              y = top + day * (cell + gap)
+              rects.append(
+                  f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="2" fill="{colors[level]}">'
+                  f'<title>{count} contribution{"s" if count != 1 else ""} on {date}</title></rect>'
+              )
+
+          svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" role="img" aria-label="GitHub contribution graph">
+          <style>
+            text {{ font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill:#8b949e; }}
+          </style>
+          <rect width="100%" height="100%" rx="10" fill="#0d1117"/>
+          <text x="{left}" y="21" font-size="12">GitHub Contributions · {calendar["totalContributions"]} in the last year</text>
+          {''.join(rects)}
+          <text x="{width-120}" y="{height-8}" font-size="10">Less</text>
+          {''.join(f'<rect x="{width-88+i*16}" y="{height-18}" width="12" height="12" rx="2" fill="{c}"/>' for i,c in enumerate(colors))}
+          <text x="{width-8}" y="{height-8}" font-size="10" text-anchor="end">More</text>
+          </svg>'''
+
+          os.makedirs("assets", exist_ok=True)
+          with open("assets/contribution-graph.svg", "w", encoding="utf-8") as f:
+              f.write(svg)
+          PY
+
+      - name: Commit updated graph
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/contribution-graph.svg
+          git diff --cached --quiet || git commit -m "update contribution graph"
+          git push origin output
