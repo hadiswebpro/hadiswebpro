@@ -1,4 +1,3 @@
-
 <p align="center">
   <a href="https://github.com/hadiswebpro">
     <img src="https://capsule-render.vercel.app/api?type=transparent&fontColor=8957e5&fontSize=54&height=90&width=602&text=Hello!%20I'm%20Hadis" alt="Hello! I'm Hadis" />
@@ -38,10 +37,10 @@ I enjoy learning by building real projects and improving my skills through pract
 
 ### 🚀 Featured Projects
 
-- 🧮 **Calculator** — Interactive calculator built with HTML, CSS and JavaScript.
-- 🎨 **Painting Random** — Random color/pattern generation project built with JavaScript.
-- 📝 **Koala Notes** — A sticky-notes PWA with local storage, reminders, sounds and theme support.
-- 🪵 **Woodworking Business Website** — A responsive business website built with React, Tailwind CSS and Framer Motion.
+- ⚽ **[Football Hub](https://github.com/hadiswebpro/football-hub)** — A football-focused web project currently in development, with plans to continue building it with React.
+- ⚓ **[Battleship](https://github.com/hadiswebpro/Battleship-odin)** — A browser-based Battleship game built with JavaScript, Webpack and Jest as part of The Odin Project.
+- 🃏 **[Memory Card Game](https://github.com/hadiswebpro/memoryGame-odin)** — An interactive React memory game built as part of The Odin Project.
+- 🌿 **[VELT — Shopping Cart](https://github.com/hadiswebpro/shopping-cart-odin)** — A luxury fragrance e-commerce experience built with React, featuring product browsing, filtering, favorites, search and cart functionality.
 
 ### 📊 GitHub Stats
 
@@ -53,7 +52,7 @@ I enjoy learning by building real projects and improving my skills through pract
 ### 📈 Contribution Graph
 
 <p align="center">
-  <img width="100%" src="https://github-readme-activity-graph.vercel.app/graph?username=hadiswebpro&bg_color=00000000&color=8957e5&line=8957e5&point=c9d1d9&area=true&hide_border=true" alt="Contribution graph" />
+  <img width="100%" src="https://github-readme-activity-graph.vercel.app/graph?username=hadiswebpro&theme=tokyo-night&hide_border=true&area=true" alt="GitHub contribution graph" />
 </p>
 
 ### 💭 Dev Quote
@@ -65,6 +64,5 @@ I enjoy learning by building real projects and improving my skills through pract
 ---
 
 <p align="center">
-  <i> 🍀 From <a href="https://github.com/hadiswebpro">hadiswebpro</a></i>
+  <i>🍀 From <a href="https://github.com/hadiswebpro">hadiswebpro</a></i>
 </p>
-
