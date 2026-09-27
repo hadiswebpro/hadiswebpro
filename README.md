@@ -34,6 +34,7 @@ I enjoy learning by building real projects and improving my skills through pract
 - 🟦 TypeScript
 - 🎨 Tailwind CSS
 - 🟢 Node.js
+- 📂 Databases
 
 ### 🚀 Featured Projects
 
