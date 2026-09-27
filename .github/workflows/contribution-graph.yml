@@ -1,6 +1,8 @@
 name: Update Contribution Graph
 
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
@@ -23,22 +25,21 @@ jobs:
       - name: Generate contribution graph
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.repository_owner }}
         run: |
           python - <<'PY'
-          import json, os, subprocess, urllib.request
+          import json, os, urllib.request
+          from datetime import datetime
 
+          username = os.environ["USERNAME"]
           query = """
-          query {
-            viewer {
-              login
+          query($login:String!) {
+            user(login:$login) {
               contributionsCollection {
                 contributionCalendar {
                   totalContributions
                   weeks {
-                    contributionDays {
-                      contributionCount
-                      date
-                    }
+                    contributionDays { contributionCount date }
                   }
                 }
               }
@@ -46,9 +47,14 @@ jobs:
           }
           """
 
-          req = urllib.request.Request(
+          payload = json.dumps({
+              "query": query,
+              "variables": {"login": username}
+          }).encode()
+
+          request = urllib.request.Request(
               "https://api.github.com/graphql",
-              data=json.dumps({"query": query}).encode(),
+              data=payload,
               headers={
                   "Authorization": f"bearer {os.environ['GH_TOKEN']}",
                   "Content-Type": "application/json",
@@ -56,73 +62,69 @@ jobs:
               }
           )
 
-          with urllib.request.urlopen(req) as response:
-              payload = json.load(response)
+          with urllib.request.urlopen(request) as response:
+              data = json.load(response)
 
-          if "errors" in payload:
-              raise RuntimeError(payload["errors"])
+          user = data["data"]["user"]
+          if not user:
+              raise SystemExit("GitHub user not found")
 
-          calendar = payload["data"]["viewer"]["contributionsCollection"]["contributionCalendar"]
-          days = [
-              day
-              for week in calendar["weeks"]
-              for day in week["contributionDays"]
-          ]
+          weeks = user["contributionsCollection"]["contributionCalendar"]["weeks"]
 
-          levels = []
-          max_count = max((day["contributionCount"] for day in days), default=0)
-
-          for day in days:
-              count = day["contributionCount"]
-              if count == 0:
-                  level = 0
-              elif max_count <= 4:
-                  level = min(count, 4)
-              else:
-                  level = min(4, 1 + (count * 3 // max_count))
-              levels.append((day["date"], count, level))
-
-          width = 820
-          height = 180
+          width = 850
+          height = 170
           left = 28
-          top = 34
+          top = 48
           cell = 12
           gap = 3
-          weeks = (len(days) + 6) // 7
-          colors = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]
 
-          rects = []
-          for index, (date, count, level) in enumerate(levels):
-              week = index // 7
-              day = index % 7
-              x = left + week * (cell + gap)
-              y = top + day * (cell + gap)
-              rects.append(
-                  f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="2" fill="{colors[level]}">'
-                  f'<title>{count} contribution{"s" if count != 1 else ""} on {date}</title></rect>'
-              )
+          counts = [
+              day["contributionCount"]
+              for week in weeks
+              for day in week["contributionDays"]
+          ]
+          max_count = max(counts) if counts else 1
 
-          svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" role="img" aria-label="GitHub contribution graph">
-          <style>
-            text {{ font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill:#8b949e; }}
-          </style>
-          <rect width="100%" height="100%" rx="10" fill="#0d1117"/>
-          <text x="{left}" y="21" font-size="12">GitHub Contributions · {calendar["totalContributions"]} in the last year</text>
-          {''.join(rects)}
-          <text x="{width-120}" y="{height-8}" font-size="10">Less</text>
-          {''.join(f'<rect x="{width-88+i*16}" y="{height-18}" width="12" height="12" rx="2" fill="{c}"/>' for i,c in enumerate(colors))}
-          <text x="{width-8}" y="{height-8}" font-size="10" text-anchor="end">More</text>
-          </svg>'''
+          def level(count):
+              if count == 0:
+                  return "#161b22"
+              ratio = count / max_count
+              if ratio <= 0.25: return "#0e4429"
+              if ratio <= 0.50: return "#006d32"
+              if ratio <= 0.75: return "#26a641"
+              return "#39d353"
+
+          parts = [
+              f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+              '<rect width="100%" height="100%" rx="10" fill="#0d1117"/>',
+              '<text x="28" y="25" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="13" font-weight="600" fill="#e6edf3">Contribution Graph</text>'
+          ]
+
+          for x, week in enumerate(weeks[-53:]):
+              for y, day in enumerate(week["contributionDays"]):
+                  rx = left + x * (cell + gap)
+                  ry = top + y * (cell + gap)
+                  parts.append(
+                      f'<rect x="{rx}" y="{ry}" width="{cell}" height="{cell}" rx="2" fill="{level(day["contributionCount"])}">'
+                      f'<title>{day["date"]}: {day["contributionCount"]} contributions</title></rect>'
+                  )
+
+          parts.append('<text x="28" y="160" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="10" fill="#8b949e">Less</text>')
+          for i, color in enumerate(["#161b22","#0e4429","#006d32","#26a641","#39d353"]):
+              parts.append(f'<rect x="{57 + i*16}" y="152" width="12" height="12" rx="2" fill="{color}"/>')
+          parts.append('<text x="139" y="160" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="10" fill="#8b949e">More</text>')
+          parts.append("</svg>")
 
           os.makedirs("assets", exist_ok=True)
-          with open("assets/contribution-graph.svg", "w", encoding="utf-8") as f:
-              f.write(svg)
+          with open("assets/contribution-graph.svg", "w", encoding="utf-8") as file:
+              file.write("\n".join(parts))
           PY
 
-      - name: Commit updated graph
+      - name: Publish graph
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/contribution-graph.svg
-          git diff --cached --quiet || git commit -m "update contribution graph"
-          git push origin output
+          git diff --cached --quiet && exit 0
+          git commit -m "update contribution graph"
+          git push origin HEAD:output
